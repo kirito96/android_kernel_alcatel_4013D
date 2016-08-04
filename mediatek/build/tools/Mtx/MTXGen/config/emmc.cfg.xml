@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<!-- 0x00 OR 0xFF -->
+	<noDataAreaFillByte>0x00</noDataAreaFillByte>
+	<EXT_CSD>	
+		<set id="162" value="0x01" mask="0xFC" />
+		<set id="179" value="0x48" mask="0x87" />		
+	</EXT_CSD>	
+
+</config>

@@ -1,0 +1,19 @@
+type itson_app, domain;
+
+# App permissions
+app_domain(itson_app)
+platform_app_domain(itson_app)
+# Need this for netlink socket
+unconfined_domain(itson_app)
+
+# Access network
+net_domain(itson_app)
+
+# Allow app to read file/dir
+allow itson_app itson_file:file { create_file_perms execute };
+allow itson_app itson_file:dir create_dir_perms;
+
+allow itson_app itson_socket:file rw_file_perms;
+r_dir_file(untrusted_app, itson_socket)
+unix_socket_connect(untrusted_app, itson, itson_app)
+unix_socket_send(untrusted_app, itson, itson_app)

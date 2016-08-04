@@ -1,0 +1,205 @@
+#!/usr/bin/python
+#
+# This script is used for NFC mode exchange by build options
+# If the JRD_NFC_SUPPORT=yes , mediatek/config/$project/ProjectConfig.mk
+# will be modified into support NFC function And if JRD_NFC_SUPPORT=no it will
+# change to not support NFC function
+# 
+#autor by yanqi.liu@tcl.com
+
+import os
+import re
+import sys
+
+###update here if you update your's project name
+projectConfigFullName = '../../mediatek/config/pixi3_4/ProjectConfig.mk'
+
+def simModeExchange(sdFlag):
+	if sdFlag == 'yes':
+		print "******Start to build dual sim version********\n"
+		os.system("sed '/Support dual SIM Card UI or not/{n;s/<VALUE>\"false\"<\/VALUE>/<VALUE>\"true\"<\/VALUE>/}' -i ../../*_wimdata_ng/wprocedures/jrdsh/isdm_sys_properties.plf")
+	elif sdFlag == 'no':
+		print "******Start to build single sim version******\n"
+		os.system("sed '/Support dual SIM Card UI or not/{n;s/<VALUE>\"true\"<\/VALUE>/<VALUE>\"false\"<\/VALUE>/}' -i ../../*_wimdata_ng/wprocedures/jrdsh/isdm_sys_properties.plf")
+	print "  Start to change sim mode: \n   => 'yes' for dual sim mode. \n   => 'no' for single sim mode.\n   => Input flag sdFlag=%s \n" %sdFlag
+
+def CAM5MPSwitch(sdflag,project):
+		print "  Start to change actual 5MP Support: \n   => 'yes' for Pixi3-4 US1-1S-5M branch. \n   => 'no' for other US1-1S branch.\n  => Input flag sdflag=%s \n" %sdflag
+		if sdflag == 'yes':
+			print "sed -i 's/JRD_CAM_ACTUAL_5MP_SUPPORT=yes for US1-1S-5M branch"
+			os.system("sed -i \'/^JRD_CAM_ACTUAL_5MP_SUPPORT/c\\JRD_CAM_ACTUAL_5MP_SUPPORT=yes\' " + projectConfigFullName)
+		else:
+			print "sed -i 's/JRD_CAM_ACTUAL_5MP_SUPPORT=no for other US1-1S branch (SW 8MP)"
+			os.system("sed -i \'/^JRD_CAM_ACTUAL_5MP_SUPPORT/c\\JRD_CAM_ACTUAL_5MP_SUPPORT=no\' " + projectConfigFullName)	
+		print "******change actual 5MP Support end**********************"
+
+def SPKSwitch(sdflag,project):
+		if project == 'pixi3_4':
+				print "  Start to change SPK Config: \n   => 'EU' for Pixi3-4 use 3in1 SPK. \n   => 'US' for external SPK.\n  => Input flag sdflag=%s \n" %sdflag
+				if sdflag == 'EU':
+					print "sed -i 's/MTK_2IN1_SPK_SUPPORT=yes for EU branch"
+					os.system("sed -i \'/^MTK_2IN1_SPK_SUPPORT/c\\MTK_2IN1_SPK_SUPPORT=yes\' " + projectConfigFullName)
+				else:
+					print "sed -i 's/MTK_2IN1_SPK_SUPPORT=no for US branch"
+					os.system("sed -i \'/^MTK_2IN1_SPK_SUPPORT/c\\MTK_2IN1_SPK_SUPPORT=no\' " + projectConfigFullName)	
+				print "******change SPK Config end**********************"
+
+def ModemBand(sdflag,project):
+	print "  Start to change Modem Band: \n   => 'EU' for support EU. \n   => 'US0' for support US0.\n   => 'US2' for support US2.\n   => 'US3' for support US3.\n  => Input flag sdflag=%s \n" %sdflag
+	Flag = 0
+	prjConf = []
+	for line in open("../../mtk6572_wimdata_ng/wprocedures/jrdsh/isdm_sys_makefile.plf","r").readlines():
+		if line.startswith('<SDMID>'):
+			SMNID = re.match('<SDMID>(.+)</SDMID>', line).group(1)
+			if (SMNID == "MODEM_IMG"):
+				Flag = 1
+			prjConf.append(line)
+		elif line.startswith('<VALUE>'):
+				appendline = ""
+ 				if (Flag == 1):
+					appendline = '<VALUE>"%s"</VALUE>\n'%sdflag
+					Flag = 0
+					prjConf.append(appendline)
+				else:
+					prjConf.append(line)
+		else:
+			prjConf.append(line)
+
+	prjconfWrite = open("../../mtk6572_wimdata_ng/wprocedures/jrdsh/isdm_sys_makefile.plf", "w")
+	for line in prjConf:
+		prjconfWrite.write(line)
+	prjconfWrite.close()
+	print "******Change Modem Band end**********************"
+
+	#BEGIN: add by fangjie,because only the EU version has the real ALSPS.
+	#if sdFlag == 'EU':
+	#	os.system("sed -i \'/^CTP_PSENSOR_SUPPORT/c\\CTP_PSENSOR_SUPPORT=no\' " + projectConfigFullName)
+	#	print "******Band = EU, Set CTP_PSENSOR_SUPPORT=no**********************"
+	#END: add by fangjie,because only the EU version has the real ALSPS.
+
+def ADTVSwitch(sdflag,project):
+        print "******Change TV Support end**********************"
+	if project == 'soul4':
+		print "  Start to change TV Support: \n   => 'ATV' for support atv function. \n   => 'DTV' for support dtv function.\n  => Input flag sdflag=%s \n" %sdflag
+		Flag = 0
+		prjConf = []
+		for line in open("../../mtk6572_wimdata_ng/wprocedures/soul4/isdm_sys_makefile.plf","r").readlines():
+			if line.startswith('<SDMID>'):
+				SMNID = re.match('<SDMID>(.+)</SDMID>', line).group(1)
+				if (SMNID == "ADTV_SUPPORT"):
+					Flag = 1
+				prjConf.append(line)
+			elif line.startswith('<VALUE>'):
+					appendline = ""
+ 					if (Flag == 1):
+						appendline = '<VALUE>"%s"</VALUE>\n'%sdflag
+						Flag = 0
+						prjConf.append(appendline)
+					else:
+						prjConf.append(line)
+			else:
+				prjConf.append(line)
+
+		prjconfWrite = open("../../mtk6572_wimdata_ng/wprocedures/soul4/isdm_sys_makefile.plf", "w")
+		for line in prjConf:
+			prjconfWrite.write(line)
+		prjconfWrite.close()
+		print "******Change TV Support end**********************"
+
+def RECEIVERisdmSwitch(sdflag,project):
+        print "******change receriver isdm  begin**********************"
+	if project == 'pixi3_4':
+	       if sdflag == 'yes':
+		       print "******Start to externl receriver isdm********\n"
+		       os.system("sed '/Receiver parameters/{n;s/<VALUE>1<\/VALUE>/<VALUE>0<\/VALUE>/}' -i ../../*_wimdata_ng/wprocedures/pixi3_4/isdm_sys_properties.plf")
+		       os.system("sed '/Receiver parameters/{n;s/<VALUE>1<\/VALUE>/<VALUE>0<\/VALUE>/}' -i ../../*_wimdata_ng/wprocedures/jrdsh/isdm_sys_properties.plf")
+		       print "  Start to change receriver isdm: \n   => 'yes' for external receriver. \n  => 'no' for 2in1 receriver => Input flag sdFlag=%s \n" %sdflag
+               if sdflag == 'no':
+		       print "******Start to 2in1 receriver isdm********\n"
+		       os.system("sed '/Receiver parameters/{n;s/<VALUE>0<\/VALUE>/<VALUE>1<\/VALUE>/}' -i ../../*_wimdata_ng/wprocedures/pixi3_4/isdm_sys_properties.plf")
+		       os.system("sed '/Receiver parameters/{n;s/<VALUE>0<\/VALUE>/<VALUE>1<\/VALUE>/}' -i ../../*_wimdata_ng/wprocedures/jrdsh/isdm_sys_properties.plf")
+	               print "  Start to change receriver isdm: \n  => 'yes' for external receriver. \n  => 'no' for 2in1 receriver. \n => Input flag sdFlag=%s \n" %sdflag
+        print "****** change receriver isdm end**********************"
+
+
+def ClkSupport(sdflag,project):
+	if project == 'soul4':
+		print "  Start to change CLK Support: \n   => 'yes' for hal have CLK. \n   => 'no' for hal have not CLK.\n  => Input flag sdflag=%s \n" %sdflag
+		Flag = 0
+		prjConf = []
+		for line in open("../../mtk6572_wimdata_ng/wprocedures/soul4/isdm_sys_makefile.plf","r").readlines():
+			if line.startswith('<SDMID>'):
+				SMNID = re.match('<SDMID>(.+)</SDMID>', line).group(1)
+				if (SMNID == "HAL_SUPPORT_CLK"):
+					Flag = 1
+				prjConf.append(line)
+			elif line.startswith('<VALUE>'):
+					appendline = ""
+ 					if (Flag == 1):
+						appendline = '<VALUE>"%s"</VALUE>\n'%sdflag
+						Flag = 0
+						prjConf.append(appendline)
+					else:
+						prjConf.append(line)
+			else:
+				prjConf.append(line)
+
+		prjconfWrite = open("../../mtk6572_wimdata_ng/wprocedures/soul4/isdm_sys_makefile.plf", "w")
+		for line in prjConf:
+			prjconfWrite.write(line)
+		prjconfWrite.close()
+		if sdflag == 'yes':
+			print "sed -i 's/co_clock_flag=1/co_clock_flag=0/g' ../custom/soul4/hal/ant/mt6582_ant_m1/WMT_SOC.cfg"
+			os.system("sed -i 's/co_clock_flag=1/co_clock_flag=0/g' ../custom/soul4/hal/ant/mt6582_ant_m1/WMT_SOC.cfg")
+			print "sed -i 's/JRD_HAL_ANT_CLK_SUPPORT=no/JRD_HAL_ANT_CLK_SUPPORT=yes/g' ../config/soul4/ProjectConfig.mk"
+			os.system("sed -i 's/JRD_HAL_ANT_CLK_SUPPORT=no/JRD_HAL_ANT_CLK_SUPPORT=yes/g' ../config/soul4/ProjectConfig.mk")
+		else:
+			print "sed -i 's/co_clock_flag=0/co_clock_flag=1/g' ../custom/soul4/hal/ant/mt6582_ant_m1/WMT_SOC.cfg"
+			os.system("sed -i 's/co_clock_flag=0/co_clock_flag=1/g' ../custom/soul4/hal/ant/mt6582_ant_m1/WMT_SOC.cfg")
+			print "sed -i 's/JRD_HAL_ANT_CLK_SUPPORT=yes/JRD_HAL_ANT_CLK_SUPPORT=no/g' ../config/soul4/ProjectConfig.mk"
+			os.system("sed -i 's/JRD_HAL_ANT_CLK_SUPPORT=yes/JRD_HAL_ANT_CLK_SUPPORT=no/g' ../config/soul4/ProjectConfig.mk")
+		print "******Change CLK Support end**********************"
+def SSVSwitch():
+	Flag = 0
+	for line in open("../../mtk6572_wimdata_ng/wprocedures/jrdsh/isdm_sys_properties.plf","r").readlines():
+		if line.startswith('<SDMID>'):
+			SMNID = re.match('<SDMID>\s*(.+)\s*</SDMID>', line).group(1)
+			if (SMNID == "ro.ssv.enabled"):
+				Flag = 1
+		elif line.startswith('<VALUE>'):
+				if (Flag == 1):
+					Flag = 0
+					SVALUE = re.match('<VALUE>\s*"(.+)"\s*</VALUE>', line).group(1)
+					if (SVALUE != "false"):
+						os.system("touch ../../device/jrdcom/common/jrdssv.mk")
+						os.system("echo 'TARGET_BUILD_SSV :=true\n' > ../../device/jrdcom/common/jrdssv.mk")
+						os.system("echo 'JRD_PRODUCT_PACKAGES += JrdSsv\n' >> ../../device/jrdcom/common/jrdssv.mk")
+					else:
+ 						os.system("touch ../../device/jrdcom/common/jrdssv.mk")
+						os.system("echo 'TARGET_BUILD_SSV=false\n' > ../../device/jrdcom/common/jrdssv.mk")
+	Flag = 0
+	for line in open("../../mtk6572_wimdata_ng/wprocedures/pixi3_4/isdm_sys_properties.plf","r").readlines():
+		if line.startswith('<SDMID>'):
+			SMNID = re.match('<SDMID>\s*(.+)\s*</SDMID>', line).group(1)
+			if (SMNID == "ro.ssv.enabled"):
+				Flag = 1
+		elif line.startswith('<VALUE>'):
+				if (Flag == 1):
+					Flag = 0
+					SVALUE = re.match('<VALUE>\s*"(.+)"\s*</VALUE>', line).group(1)
+					if (SVALUE != "false"):
+						os.system("touch ../../device/jrdcom/common/jrdssv.mk")
+						os.system("echo 'TARGET_BUILD_SSV :=true\n' > ../../device/jrdcom/common/jrdssv.mk")
+						os.system("echo 'JRD_PRODUCT_PACKAGES += JrdSsv\n' >> ../../device/jrdcom/common/jrdssv.mk")
+					else:
+ 						os.system("touch ../../device/jrdcom/common/jrdssv.mk")
+						os.system("echo 'TARGET_BUILD_SSV=false\n' > ../../device/jrdcom/common/jrdssv.mk")
+
+if __name__ == "__main__":
+	if len(sys.argv) < 4:
+		exit(0)
+	sdflag = sys.argv[1]
+	featureflag = sys.argv[2]
+	project = sys.argv[3]
+	
+

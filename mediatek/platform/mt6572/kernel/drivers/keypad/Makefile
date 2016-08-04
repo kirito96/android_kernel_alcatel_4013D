@@ -1,0 +1,5 @@
+ifeq ($(TARGET_BUILD_MMITEST),true)
+EXTRA_CFLAGS += -DTARGET_BUILD_MMITEST
+endif
+
+obj-$(CONFIG_MTK_KEYPAD) := hal_kpd.o
